@@ -5,17 +5,8 @@ from datetime import datetime, date, time
 import random
 import time as time_module
 
-departure = '2900000'  # Tashkent
-arrival = '2900700'    # Samarkand
-when = "2026-05-20"
-af = 'ae'
-sh = 'sb'
-from_time = time.fromisoformat("00:00")
-to_time = time.fromisoformat("23:59")
-interval = 60
-
 # Stations, brands, classes, etc. of interest can be hardcoded:
-stations = {"tashkent": "2900000", "samarkand": "2900700", "bukhara": "2900800"}
+stations = {"t": "2900000", "s": "2900700", "b": "2900800"}
 brands = ["Afrosiyob", "Sharq", "Nasaf"] # There are more, I typically care only about Afrosiyob
 classes = {
     "Afrosiyob": {"2Е": "e", "1С": "b"},
@@ -76,32 +67,60 @@ def filter_trains(trains, af, sh, from_time, to_time):
                     dep_time = datetime.strptime(t['departureDate'], "%d.%m.%Y %H:%M").time()
                     
                     inline_trains.append({"brand": brand, "t_num": t_num, "dep_time": dep_time, "seats": seats, "cls": cls, "code": code, "price": price})
-                    #print(f"{brand} {t_num} departing at {dep_time} has {seats} {cls} ({code}) seats available at {price} UZS")
 
     # Filtering departure time and class
     filtered_trains = []
     for t in inline_trains:
         if train_fits(t, af, sh, from_time, to_time):
             filtered_trains.append(t)
-            #print(f"{t['brand']} {t['t_num']} departing at {t['dep_time']} has {t['seats']} {t['cls']} ({t['code']}) seats available at {t['price']} UZS")
     return filtered_trains
 
 def alert(filtered_trains):
     if filtered_trains:
-        play_sound()  # Implement this function to play a sound alert
+        play_sound()
         for t in filtered_trains:
             print(f"Alert: {t['brand']} {t['t_num']} departing at {t['dep_time']} has {t['seats']} {t['cls']} ({t['code']}) seats available at {t['price']} UZS")
-            print("---\n")
+        print("---\n")
 
 def play_sound():
     import winsound
-    # Play a system sound
     for _ in range(3):
         winsound.PlaySound("SystemExclamation", winsound.SND_ALIAS)
 
 
-while True:
-    trains = request_trains(departure=departure, arrival=arrival, date=when)
-    filtered_trains = filter_trains(trains, af, sh, from_time, to_time)
-    alert(filtered_trains)
-    time_module.sleep(interval + random.uniform(-5, 5))  # add some jitter to avoid looking like a bot
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        prog='Railway Ticket Alert',
+        description='Sends a request to the railway API every n seconds and alerts you if requested tickets are available',
+        epilog='')
+    parser.add_argument('when', type=date.fromisoformat, help='Date of departure in ISO YYYY-MM-DD format')
+    parser.add_argument('departure', type=str, help='Departure station')
+    parser.add_argument('arrival', type=str, help='Arrival station')
+    parser.add_argument('-a', '--afrosiyob', type=str, required=False, default="ae", help='Include Afrosiyob trains (economic: e, business: b, together: aeb)')
+    parser.add_argument('-s', '--sharq', type=str, required=False, default="s", help='Include Sharq/Nasaf trains (economic: e, business: b, together: seb)')
+    parser.add_argument('--from-time', type=time.fromisoformat, required=False, default=time(0, 0), help='Start of departure time window in HH:MM format')
+    parser.add_argument('--to-time', type=time.fromisoformat, required=False, default=time(23, 59), help='End of departure time window in HH:MM format')
+    parser.add_argument('-i', '--interval', type=int, required=False, default=60, help='Interval between requests in seconds')
+    args = parser.parse_args()
+
+    dep_key = args.departure.lower()[0] # first letter is enough to identify the station, e.g. "t" for Tashkent
+    arr_key = args.arrival.lower()[0]
+    if dep_key not in stations:
+        parser.error(f"Unknown departure station '{args.departure}'. Available: {', '.join(stations.keys())}")
+    if arr_key not in stations:
+        parser.error(f"Unknown arrival station '{args.arrival}'. Available: {', '.join(stations.keys())}")
+
+    when = args.when.isoformat()
+    departure = stations[dep_key]
+    arrival = stations[arr_key]
+    af = args.afrosiyob
+    sh = args.sharq
+    from_time = args.from_time
+    to_time = args.to_time
+    interval = args.interval
+
+    while True:
+        trains = request_trains(departure=departure, arrival=arrival, date=when)
+        filtered_trains = filter_trains(trains, af, sh, from_time, to_time)
+        alert(filtered_trains)
+        time_module.sleep(interval + random.uniform(-5, 5))
