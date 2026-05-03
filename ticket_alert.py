@@ -41,7 +41,14 @@ def request_trains(date, departure="2900000", arrival="2900700"):
             }
         },
     )
-    trains = resp.json()["data"]["directions"]["forward"]["trains"]
+    try:
+        data = resp.json()
+        trains = data["data"]["directions"]["forward"]["trains"]
+    except (KeyError, json.JSONDecodeError) as e:
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Error: {e}")
+        print(f"Status: {resp.status_code}")
+        print(f"Body: {resp.text[:300]}")
+        return []
     return trains
 
 def train_fits(t: dict, af: str, sh: str, from_time: time, to_time: time) -> bool:
@@ -78,7 +85,7 @@ def filter_trains(trains, af, sh, from_time, to_time):
 
 def alert(filtered_trains):
     if filtered_trains:
-        play_sound()
+        winsound.Beep(2500, 1000) # frequency, duration
         for t in filtered_trains:
             print(f"Alert: {t['brand']} {t['t_num']} departing at {t['dep_time']} has {t['seats']} {t['cls']} ({t['code']}) seats available at {t['price']} UZS")
         print("---\n")
