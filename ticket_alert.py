@@ -84,11 +84,10 @@ def filter_trains(trains, af, sh, from_time, to_time):
     return filtered_trains
 
 def alert(filtered_trains):
-    if filtered_trains:
-        winsound.Beep(2500, 1000) # frequency, duration
-        for t in filtered_trains:
-            print(f"Alert: {t['brand']} {t['t_num']} departing at {t['dep_time']} has {t['seats']} {t['cls']} ({t['code']}) seats available at {t['price']} UZS")
-        print("---\n")
+    winsound.Beep(2500, 1000) # frequency, duration
+    for t in filtered_trains:
+        print(f"Alert: {t['brand']} {t['t_num']} departing at {t['dep_time']} has {t['seats']} {t['cls']} ({t['code']}) seats available at {t['price']} UZS")
+    print("---\n")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -124,5 +123,8 @@ if __name__ == "__main__":
     while True:
         trains = request_trains(departure=departure, arrival=arrival, date=when)
         filtered_trains = filter_trains(trains, af, sh, from_time, to_time)
-        alert(filtered_trains)
-        time_module.sleep(interval + random.uniform(-5, 5))
+        if filtered_trains:
+            alert(filtered_trains)
+        else:
+            print(".", end="", flush=True)
+        time_module.sleep(interval + random.uniform(-10, 10))
