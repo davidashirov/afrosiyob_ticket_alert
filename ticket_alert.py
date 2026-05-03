@@ -4,6 +4,7 @@ import json
 from datetime import datetime, date, time
 import random
 import time as time_module
+import winsound
 
 # Stations, brands, classes, etc. of interest can be hardcoded:
 stations = {"t": "2900000", "s": "2900700", "b": "2900800"}
@@ -81,12 +82,6 @@ def alert(filtered_trains):
         for t in filtered_trains:
             print(f"Alert: {t['brand']} {t['t_num']} departing at {t['dep_time']} has {t['seats']} {t['cls']} ({t['code']}) seats available at {t['price']} UZS")
         print("---\n")
-
-def play_sound():
-    import winsound
-    for _ in range(3):
-        winsound.PlaySound("SystemExclamation", winsound.SND_ALIAS)
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
